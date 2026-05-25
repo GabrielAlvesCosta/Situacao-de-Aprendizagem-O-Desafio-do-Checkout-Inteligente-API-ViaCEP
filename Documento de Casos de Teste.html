@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Documento de Casos de Teste &mdash; Integração ViaCEP</title>
+    <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+  display: none;
+}
+</style>
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+</style>
+<style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+</style>
+</head>
+<body class="vscode-body vscode-light">
+    <h1 id="documento-de-casos-de-teste--viacep">Documento de Casos de Teste — Integração ViaCEP (Checkout Inteligente)</h1>
+<p><strong>Módulo:</strong> <code>tests/test_viacep.py</code><br>
+<strong>Arquivo de testes:</strong> <code>tests/test_viacep.py</code><br>
+<strong>Framework:</strong> pytest + requests</p>
+<hr>
+<h2 id="funcoes-testadas">Funções testadas</h2>
+<table>
+<thead>
+<tr>
+<th>Função</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_cep_valido_retorna_200_e_dados</code></td>
+<td>Garante que um CEP válido traz os dados corretos de endereço</td>
+</tr>
+<tr>
+<td><code>test_cep_inexistente_retorna_flag_de_erro</code></td>
+<td>Garante o retorno da flag de erro para CEPs não encontrados</td>
+</tr>
+<tr>
+<td><code>test_cep_formato_invalido_retorna_400</code></td>
+<td>Verifica se a API barra requisições com formato inválido</td>
+</tr>
+<tr>
+<td><code>test_cep_com_hifen_na_url_retorna_200</code></td>
+<td>Verifica a resiliência da API ao receber CEPs com máscara</td>
+</tr>
+<tr>
+<td><code>test_estrutura_do_json_retornado_schema</code></td>
+<td>Garante que o contrato de chaves do JSON não foi modificado</td>
+</tr>
+<tr>
+<td><code>test_tempo_de_resposta_da_api</code></td>
+<td>Verifica se a API responde em tempo aceitável para o usuário</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="casos-de-teste">Casos de Teste</h2>
+<hr>
+
+<h3 id="ct-01">CT-01 — Consulta de CEP Válido e Existente</h3>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ID</strong></td>
+<td>CT-01</td>
+</tr>
+<tr>
+<td><strong>Função testada</strong></td>
+<td><code>test_cep_valido_retorna_200_e_dados</code></td>
+</tr>
+<tr>
+<td><strong>Objetivo</strong></td>
+<td>Validar se a API retorna os dados corretamente para preencher o formulário HTML</td>
+</tr>
+<tr>
+<td><strong>Entradas</strong></td>
+<td><code>cep = "01001000"</code></td>
+</tr>
+<tr>
+<td><strong>Resultado esperado</strong></td>
+<td>Status 200 e dados do endereço (Praça da Sé)</td>
+</tr>
+<tr>
+<td><strong>Técnica</strong></td>
+<td>Igualdade direta e ausência de chave (<code>assert ==</code>, <code>assert not in</code>)</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>Caminho Feliz</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">test_cep_valido_retorna_200_e_dados</span>(api_client, base_url):
+    cep = <span class="hljs-string">"01001000"</span>
+    url = <span class="hljs-string">f"{base_url}{cep}/json/"</span>
+    
+    response = api_client.get(url)
+    dados = response.json()
+    
+    <span class="hljs-keyword">assert</span> response.status_code == <span class="hljs-number">200</span>
+    <span class="hljs-keyword">assert</span> <span class="hljs-string">"erro"</span> <span class="hljs-keyword">not in</span> dados
+    <span class="hljs-keyword">assert</span> dados[<span class="hljs-string">"cep"</span>] == <span class="hljs-string">"01001-000"</span>
+    <span class="hljs-keyword">assert</span> dados[<span class="hljs-string">"logradouro"</span>] == <span class="hljs-string">"Praça da Sé"</span>
+    <span class="hljs-keyword">assert</span> dados[<span class="hljs-string">"bairro"</span>] == <span class="hljs-string">"Sé"</span>
+    <span class="hljs-keyword">assert</span> dados[<span class="hljs-string">"localidade"</span>] == <span class="hljs-string">"São Paulo"</span>
+</code></pre>
+<hr>
+
+<h3 id="ct-02">CT-02 — CEP formatado corretamente, mas inexistente</h3>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ID</strong></td>
+<td>CT-02</td>
+</tr>
+<tr>
+<td><strong>Função testada</strong></td>
+<td><code>test_cep_inexistente_retorna_flag_de_erro</code></td>
+</tr>
+<tr>
+<td><strong>Objetivo</strong></td>
+<td>Validar se um CEP inexistente retorna a flag de erro para o Front-end interceptar</td>
+</tr>
+<tr>
+<td><strong>Entradas</strong></td>
+<td><code>cep = "99999999"</code></td>
+</tr>
+<tr>
+<td><strong>Resultado esperado</strong></td>
+<td>Status 200 e payload <code>{"erro": "true"}</code></td>
+</tr>
+<tr>
+<td><strong>Técnica</strong></td>
+<td>Extração de chave (<code>get()</code>) e Igualdade direta</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>Caminho Infeliz (Validação Semântica)</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">test_cep_inexistente_retorna_flag_de_erro</span>(api_client, base_url):
+    cep = <span class="hljs-string">"99999999"</span>
+    url = <span class="hljs-string">f"{base_url}{cep}/json/"</span>
+    
+    response = api_client.get(url)
+    dados = response.json()
+    
+    <span class="hljs-keyword">assert</span> response.status_code == <span class="hljs-number">200</span>
+    <span class="hljs-keyword">assert</span> dados.get(<span class="hljs-string">"erro"</span>) == <span class="hljs-string">"true"</span>
+</code></pre>
+<hr>
+
+<h3 id="ct-03">CT-03 — Validação de API para CEPs incompletos</h3>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ID</strong></td>
+<td>CT-03</td>
+</tr>
+<tr>
+<td><strong>Função testada</strong></td>
+<td><code>test_cep_formato_invalido_retorna_400</code></td>
+</tr>
+<tr>
+<td><strong>Objetivo</strong></td>
+<td>Validar que a API rejeita formatos de CEP inválidos no Back-end</td>
+</tr>
+<tr>
+<td><strong>Entradas</strong></td>
+<td><code>cep = "123"</code></td>
+</tr>
+<tr>
+<td><strong>Resultado esperado</strong></td>
+<td>Status 400 (Bad Request)</td>
+</tr>
+<tr>
+<td><strong>Técnica</strong></td>
+<td>Igualdade direta de código HTTP</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>Caminho Infeliz (Validação de Sintaxe)</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">test_cep_formato_invalido_retorna_400</span>(api_client, base_url):
+    cep_invalido = <span class="hljs-string">"123"</span>
+    url = <span class="hljs-string">f"{base_url}{cep_invalido}/json/"</span>
+    
+    response = api_client.get(url)
+    <span class="hljs-keyword">assert</span> response.status_code == <span class="hljs-number">400</span>
+</code></pre>
+<hr>
+
+<h3 id="ct-04">CT-04 — API processando CEP enviado com Hífen</h3>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ID</strong></td>
+<td>CT-04</td>
+</tr>
+<tr>
+<td><strong>Função testada</strong></td>
+<td><code>test_cep_com_hifen_na_url_retorna_200</code></td>
+</tr>
+<tr>
+<td><strong>Objetivo</strong></td>
+<td>Validar a resiliência do back-end ao receber dados não higienizados</td>
+</tr>
+<tr>
+<td><strong>Entradas</strong></td>
+<td><code>cep = "01001-000"</code></td>
+</tr>
+<tr>
+<td><strong>Resultado esperado</strong></td>
+<td>Status 200 e dados do endereço</td>
+</tr>
+<tr>
+<td><strong>Técnica</strong></td>
+<td>Igualdade direta (<code>assert ==</code>)</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>Caminho Alternativo</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">test_cep_com_hifen_na_url_retorna_200</span>(api_client, base_url):
+    cep_com_hifen = <span class="hljs-string">"01001-000"</span>
+    url = <span class="hljs-string">f"{base_url}{cep_com_hifen}/json/"</span>
+    
+    response = api_client.get(url)
+    dados = response.json()
+    
+    <span class="hljs-keyword">assert</span> response.status_code == <span class="hljs-number">200</span>
+    <span class="hljs-keyword">assert</span> <span class="hljs-string">"erro"</span> <span class="hljs-keyword">not in</span> dados
+    <span class="hljs-keyword">assert</span> dados[<span class="hljs-string">"cep"</span>] == <span class="hljs-string">"01001-000"</span>
+</code></pre>
+<hr>
+
+<h3 id="ct-05">CT-05 — Verificação de Contrato (Schema JSON)</h3>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ID</strong></td>
+<td>CT-05</td>
+</tr>
+<tr>
+<td><strong>Função testada</strong></td>
+<td><code>test_estrutura_do_json_retornado_schema</code></td>
+</tr>
+<tr>
+<td><strong>Objetivo</strong></td>
+<td>Garantir que a API externa não alterou a estrutura das chaves do objeto</td>
+</tr>
+<tr>
+<td><strong>Entradas</strong></td>
+<td><code>cep = "01001000"</code></td>
+</tr>
+<tr>
+<td><strong>Resultado esperado</strong></td>
+<td>Todas as chaves obrigatórias presentes no dicionário retornado</td>
+</tr>
+<tr>
+<td><strong>Técnica</strong></td>
+<td>Laço de repetição e contenção (<code>assert in</code>)</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>Validação Estrutural / Schema</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">test_estrutura_do_json_retornado_schema</span>(api_client, base_url):
+    cep = <span class="hljs-string">"01001000"</span>
+    url = <span class="hljs-string">f"{base_url}{cep}/json/"</span>
+    
+    response = api_client.get(url)
+    dados = response.json()
+    
+    chaves_esperadas = [
+        <span class="hljs-string">"cep"</span>, <span class="hljs-string">"logradouro"</span>, <span class="hljs-string">"complemento"</span>, <span class="hljs-string">"bairro"</span>, 
+        <span class="hljs-string">"localidade"</span>, <span class="hljs-string">"uf"</span>, <span class="hljs-string">"ibge"</span>, <span class="hljs-string">"gia"</span>, <span class="hljs-string">"ddd"</span>, <span class="hljs-string">"siafi"</span>
+    ]
+    
+    <span class="hljs-keyword">assert</span> response.status_code == <span class="hljs-number">200</span>
+    <span class="hljs-keyword">for</span> chave <span class="hljs-keyword">in</span> chaves_esperadas:
+        <span class="hljs-keyword">assert</span> chave <span class="hljs-keyword">in</span> dados, <span class="hljs-string">f"A chave obrigatória '{chave}' sumiu do retorno!"</span>
+</code></pre>
+<hr>
+
+<h3 id="ct-06">CT-06 — Desempenho e SLA de Resposta</h3>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ID</strong></td>
+<td>CT-06</td>
+</tr>
+<tr>
+<td><strong>Função testada</strong></td>
+<td><code>test_tempo_de_resposta_da_api</code></td>
+</tr>
+<tr>
+<td><strong>Objetivo</strong></td>
+<td>Validar se o tempo de resposta garante uma boa experiência ao usuário no front-end</td>
+</tr>
+<tr>
+<td><strong>Entradas</strong></td>
+<td><code>cep = "01001000"</code></td>
+</tr>
+<tr>
+<td><strong>Resultado esperado</strong></td>
+<td>Tempo de requisição menor que 2 segundos</td>
+</tr>
+<tr>
+<td><strong>Técnica</strong></td>
+<td>Comparador de limite (<code>assert <</code>)</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>Teste de Performance / NFR (Requisito Não Funcional)</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">test_tempo_de_resposta_da_api</span>(api_client, base_url):
+    cep = <span class="hljs-string">"01001000"</span>
+    url = <span class="hljs-string">f"{base_url}{cep}/json/"</span>
+    
+    response = api_client.get(url)
+    tempo_resposta = response.elapsed.total_seconds()
+    
+    <span class="hljs-keyword">assert</span> tempo_resposta < <span class="hljs-number">2.0</span>, <span class="hljs-string">f"A API demorou muito! Tempo: {tempo_resposta}s"</span>
+</code></pre>
+<hr>
+
+<h2 id="resumo-das-técnicas">Resumo das técnicas utilizadas</h2>
+<table>
+<thead>
+<tr>
+<th>Técnica</th>
+<th>Quando usar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>assert valor1 == valor2</code></td>
+<td>Comparação de valores exatos (status HTTP, retornos de texto e booleanos)</td>
+</tr>
+<tr>
+<td><code>assert chave in objeto</code></td>
+<td>Garantir que uma propriedade existe dentro da estrutura do JSON de resposta</td>
+</tr>
+<tr>
+<td><code>assert chave not in objeto</code></td>
+<td>Garantir que o JSON retornado em sucesso está livre de flags de falha</td>
+</tr>
+<tr>
+<td><code>assert tempo < limite, "msg"</code></td>
+<td>Verificações de limite com mensagens customizadas para debug fácil em testes de performance</td>
+</tr>
+</tbody>
+</table>
+<hr>
+
+<h2 id="como-executar">Como executar os testes</h2>
+<p>A partir da raiz do projeto, instale os requisitos caso seja a primeira vez e execute o pytest:</p>
+<pre><code class="language-bash"><span class="hljs-comment"># Instalar as bibliotecas necessárias</span>
+pip install pytest requests
+
+<span class="hljs-comment"># Rodar todos os testes com saída simplificada</span>
+pytest
+
+<span class="hljs-comment"># Rodar detalhadamente para visualizar o resultado de cada caso</span>
+pytest -v
+
+<span class="hljs-comment"># Rodar um teste de falha/performance específico para debug</span>
+pytest tests/test_viacep.py::test_tempo_de_resposta_da_api
+</code></pre>
+<hr>
+
+<h2 id="resultado-esperado">Resultado esperado ao rodar <code>pytest -v</code></h2>
+<pre><code>tests/test_viacep.py::test_cep_valido_retorna_200_e_dados       PASSED
+tests/test_viacep.py::test_cep_inexistente_retorna_flag_de_erro PASSED
+tests/test_viacep.py::test_cep_formato_invalido_retorna_400     PASSED
+tests/test_viacep.py::test_cep_com_hifen_na_url_retorna_200     PASSED
+tests/test_viacep.py::test_estrutura_do_json_retornado_schema   PASSED
+tests/test_viacep.py::test_tempo_de_resposta_da_api             PASSED
+
+============================== 6 passed in 2.10s ==============================
+</code></pre>
+
+</body>
+</html>
