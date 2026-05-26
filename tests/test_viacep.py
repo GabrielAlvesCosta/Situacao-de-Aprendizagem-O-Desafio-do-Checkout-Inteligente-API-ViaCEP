@@ -4,7 +4,8 @@ import pytest, requests
 def api_client():
     with requests.Session() as session:
         yield session 
-
+        
+        session.close()
 
 @pytest.fixture(scope='function')
 def base_url():
